@@ -23,3 +23,4 @@ npm i express dotenv mongoose jsonwebtoken stripe cloudinary  cookie-parser bcry
 
 /// IF YOU GET ERROR ON SIGNUP/LOGIN/LOGOUT SECTİON 404 ERROR THEY MUST BE POST METHOD ON router
 
+// we will with www.stash.com free redis connection in /lib/redis.js
