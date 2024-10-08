@@ -1,0 +1,25 @@
+usages: 
+lib folder for database configuration
+
+
+
+// Enes@LAPTOP-LESH9FO5 MINGW64 ~/Desktop/E-COMMERCEREACTREDIS
+npm init -y
+
+
+// Enes@LAPTOP-LESH9FO5 MINGW64 ~/Desktop/E-COMMERCEREACTREDIS
+npm i express dotenv mongoose jsonwebtoken stripe cloudinary  cookie-parser bcryptjs ioredis 
+
+// change package.json file main : backend/server.js
+// check the file package.json
+
+// add type :module on the package.json file
+
+//added after router and contreller define mongo.db
+1-) create a new project 
+2-) add a cluster (on web page)
+3-) select like node js drivers
+
+
+/// IF YOU GET ERROR ON SIGNUP/LOGIN/LOGOUT SECTİON 404 ERROR THEY MUST BE POST METHOD ON router
+
