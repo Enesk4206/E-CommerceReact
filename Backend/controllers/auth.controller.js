@@ -10,6 +10,7 @@ const generateTokens = (userId) =>{
     return {accessToken, refreshToken};
 };
 
+{/*it works redis from redis.js and we configure refreshtoken from upstash*/}
 const storeRefreshToken = async(userId ,refreshToken) =>{
     //7days
     await redis.set(`refresh_token: ${userId}`,refreshToken,"EX",7*24*60*60) 
@@ -52,11 +53,11 @@ export const signup = async (req, res)=>{
 
 
         res.status(201).json({user:{
-            _id :user._id,
+            _id: user._id,
             name : user.name,
             email : user.email,
-            role: user.role,
-        }, message:"user created successfully"});
+            role : user.role,
+        },message:"User created successfully"});
     
      
    } catch (error) {
@@ -65,9 +66,81 @@ export const signup = async (req, res)=>{
 }
 
 export const login = async (req,res)=>{
-    res.send("login router calles")
+    try {
+        const {email , password} = req.body;
+        const user = await User.findOne({email});
+
+        if(user &&(await user.comparePassword(password))){
+            const {accessToken , refreshToken} = generateTokens(user._id);
+
+            await storeRefreshToken(user._id, refreshToken);
+            setCookies(res , accessToken , refreshToken);
+
+            res.json({
+                _id : user._id,
+                name : user.name,
+                email : user.email,
+                role : user.role
+            });
+        }
+        else{
+            res.status(401).json({message: "Invalid email or password"})
+        }
+    } catch (error) {
+        console.log("Error in login controller", error.message);
+        res.status(500).json({message:"Server side problem",error:error.message})
+    }    
 }
 
-export const logout = async (req ,res)=>{
-    res.send("logout router called")
+export const logout = async (req ,res)=>
+{
+    try {
+        const refreshToken = req.cookies.refreshToken;
+    if(refreshToken){
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        await redis.del(`redis_token: ${decoded.userId}`)
+    }
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    res.json({message: "Logged out successfully"})
+
+    } catch (error) {
+        res.status(500).json({message:"Server error", error:error.message})
+    }
+}
+
+{/* this will refresh  the access token */}
+export const refreshToken = async(req ,res)=>{
+    try {
+        const refreshToken = req.cookies.refreshToken;
+        
+        if(!refreshToken){
+            return res.status(401).json({mesage:"No refresh token provided"});
+        }
+       
+       
+        const decoded = jwt.verify(refreshToken , process.env.REFRESH_TOKEN_SECRET);
+        const storedToken = await redis.get(`refresh_token:${decoded.userId}`);
+
+        if(storedToken !== refreshToken){
+            // console.log(storedToken);
+            // console.log(refreshToken)
+            return res.status(401).json({message:"Invalid refresh token"});
+        }
+        const accessToken = jwt.sign({userId:decoded.userId},process.env.ACCESS_TOKEN_SECRET,{expiresIn:"15m"});
+        
+        res.cookie("accessToken",accessToken,{
+            httpOnly : true,
+            secure : process.env.NODE_ENV ==="production",
+            sameSite : "strict",
+            maxAge : 15 * 60 * 1000,
+        })
+
+        res.json({message :"Token refreshed successfully"})
+
+    } catch (error) {
+        console.log("Error in refreshTokenController",error.message);
+        res.status(500).json({message : "Server error" , error: error.message})       
+    }
 }
